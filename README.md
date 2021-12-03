@@ -1,4 +1,4 @@
-# flutter_swish
+# flutter_swish_payment
 
 A Swish commerce widget library for Flutter.
 
@@ -9,4 +9,4 @@ Learn more at [Swish](https://www.swish.nu/).
 
 ## Contributing
 
-Please read our [contribution guide](https://github.com/johanehinger/flutter_swish/blob/main/CONTRIBUTING.md) before you start contributing.
+Please read our [contribution guide](https://github.com/johanehinger/flutter_swish_payment/blob/main/CONTRIBUTING.md) before you start contributing.

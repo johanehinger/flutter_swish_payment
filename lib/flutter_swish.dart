@@ -1,4 +1,4 @@
-library flutter_swish;
+library flutter_swish_payment;
 
 /// A Calculator.
 class Calculator {
