@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_swish/flutter_swish.dart';
+import 'package:flutter_swish_payment/flutter_swish_payment.dart';
 
 void main() {
   test('adds one to input values', () {
