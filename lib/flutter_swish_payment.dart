@@ -72,7 +72,6 @@ enum LogoTypes {
 class SwishButton extends StatelessWidget {
   /// Create an elevated button with the primary logo of Swish.
   ///
-  /// ![Swish Primary Logo]()
   const SwishButton.primaryElevatedButton({
     Key? key,
     required this.onPressed,
@@ -83,7 +82,6 @@ class SwishButton extends StatelessWidget {
 
   /// Create an text button with the primary logo of Swish.
   ///
-  /// ![Swish Primary Logo]()
   const SwishButton.primaryTextButton({
     Key? key,
     required this.onPressed,
