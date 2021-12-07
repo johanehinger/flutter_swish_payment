@@ -162,7 +162,6 @@ class SwishButton extends StatelessWidget {
           child: _logo,
           style: _style,
         );
-
       case ButtonTypes.textButton:
         return TextButton(
           onPressed: onPressed,
