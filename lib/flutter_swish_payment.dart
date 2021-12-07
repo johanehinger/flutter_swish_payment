@@ -1,7 +1,11 @@
 library flutter_swish_payment;
 
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 
 enum ButtonTypes {
   textButton,
@@ -167,5 +171,184 @@ class SwishButton extends StatelessWidget {
           style: _style,
         );
     }
+  }
+}
+
+/// # Swish Payment Data
+///
+/// A class for representing all data used in a Swish payment request.
+/// [payeeAlias], [amount], [currency], and [callbackUrl] are all
+/// required and mustn’t be null
+///
+/// [payerAlias], [payeePaymentReference], [payerSSN], and [ageLimit]
+/// are all optional. **Use only if you know what you are doing!**
+///
+/// [message] is also optional but is recommended.
+class SwishPaymentData {
+  const SwishPaymentData({
+    required this.payeeAlias,
+    required this.amount,
+    required this.currency,
+    required this.callbackUrl,
+    this.payerAlias,
+    this.payeePaymentReference,
+    this.payerSSN,
+    this.ageLimit,
+    this.message,
+  });
+
+  /// The Swish number of the payee. It needs to match with Merchant
+  /// Swish number.
+  final String payeeAlias;
+
+  /// The amount of money to pay. The amount cannot be less than
+  /// 0.01 SEK and not more than 999999999999.99 SEK. Valid value
+  /// has to be all digits or with 2 digit decimal separated with a period.
+  final String amount;
+
+  /// The currency to use. Currently the only supported value is SEK.
+  final String currency;
+
+  /// URL that Swish will use to notify caller about the result of the
+  /// payment request. The URL has to use HTTPS.
+  final String callbackUrl;
+
+  /// The registered Cell phone number of the person that makes the
+  /// payment. It can only contain numbers and has to be at least 8
+  /// and at most 15 digits. It also needs to match the following
+  /// format in order to be found in Swish: `country code + cell
+  /// phone number (without leading zero)`. E.g.: 46712345678 If
+  /// set, request is handled as E-Commerce payment. If not set,
+  /// request is handled as M- Commerce payment
+  final String? payerAlias;
+
+  /// Payment reference supplied by theMerchant. This is not used
+  /// by Swish but is included in responses back to the client.
+  /// This reference could for example be an order id or similar.
+  /// If set the value must not exceed 35 characters and only
+  /// the following characters are allowed: [a-ö, A-Ö, 0-9, -]
+  final String? payeePaymentReference;
+
+  /// The social security number of the individual making the
+  /// payment, should match the registered value for payerAlias
+  /// or the payment will not be accepted. The value should
+  /// be a proper Swedish social security number (personnummer
+  /// or sammordningsnummer). Note: Since MSS is a stand-alone
+  /// test system it can not verify if payerSSN match registered
+  /// value for payerAlias.
+  final String? payerSSN;
+
+  /// Minimum age (in years) that the individual connected to
+  /// the payerAlias has to be in order for the payment to be
+  /// accepted. Value has to be in the range of 1 to 99. Note:
+  /// Since MSS is a stand-alone test system it can not verify
+  /// the payerAlias age against the ageLimit value.
+  final String? ageLimit;
+
+  /// Merchant supplied message about the payment/order. Max
+  /// 50 characters. Allowed characters are the letters a-ö,
+  /// A-Ö, the numbers 0-9 and any of the special characters
+  /// :;.,?!()-”.
+  final String? message;
+
+  /// Convert [SwishPaymentData] into a JSON object.
+  Map<String, dynamic> toJson() => {
+        'payeeAlias': payeeAlias,
+        'amount': amount,
+        'currency': currency,
+        'callbackUrl': callbackUrl,
+        'payerAlias': payerAlias,
+        'payeePaymentReference': payeePaymentReference,
+        'payerSSN': payerSSN,
+        'ageLimit': ageLimit,
+        'message': message,
+      };
+}
+
+/// # Swish Agent
+///
+/// Handles Public key infrastructure (PKI). Must be initialized
+/// with the organization’s Swish certificate, key, and certificate
+/// authority.
+///
+/// It is important that it is ensured that everything has been
+/// loaded before calling [SwishAgent.initializeAgent]. This is
+/// preferably done using:
+/// ```dart
+/// WidgetsFlutterBinding.ensureInitialized();
+/// ```
+// ignore: todo
+/// TODO: Initialize PKI members using more than project assets.
+///
+/// For more info about PKI:
+/// > https://developer.swish.nu/documentation/getting-started/swish-commerce-api
+/// > https://en.wikipedia.org/wiki/Public_key_infrastructure
+class SwishAgent {
+  const SwishAgent.initializeAgent({
+    required this.key,
+    required this.ca,
+    required this.cert,
+    required this.credential,
+  });
+
+  /// Certificate **(.pem file)**
+  /// This file should be well protected in your project!
+  final ByteData cert;
+
+  /// Key for reading the Certificate [cert] **(.key file)**
+  /// This file should be well protected in your project!
+  final ByteData key;
+
+  /// Certificate authority **(.pem file)**
+  /// This file should be well protected in your project!
+  final ByteData ca;
+
+  /// The credentials for reading certificate files.
+  final String credential;
+
+  get securityContext {
+    SecurityContext context = SecurityContext.defaultContext;
+    context.useCertificateChainBytes(
+      cert.buffer.asUint8List(),
+      password: credential,
+    );
+    context.usePrivateKeyBytes(
+      key.buffer.asUint8List(),
+    );
+  }
+}
+
+/// # Swish Client
+///
+/// Handles communication to the Swish API. Must be created with
+/// a [SwishAgent] which provides the [SwishClient] with necessary
+/// security context.
+class SwishClient {
+  SwishClient({
+    required this.swishAgent,
+  }) : _httpClient = HttpClient(context: swishAgent.securityContext);
+
+  final SwishAgent swishAgent;
+  final HttpClient _httpClient;
+
+  Future<int> createPaymentRequest(
+      {required SwishPaymentData swishPaymentData}) async {
+    // ignore: todo
+    // TODO: Figure out what instructionId is in .../api/v2/paymentrequests/${instructionId}
+    HttpClientRequest request = await _httpClient.openUrl(
+      'PUT',
+      Uri.parse(
+        'https://mss.cpc.getswish.net/swish-cpcapi/api/v2/paymentrequests',
+      ),
+    );
+    request.headers.set(HttpHeaders.contentTypeHeader, 'APPLICATION/JSON');
+    // Write the data to the request
+    request.write(
+      json.encode(
+        swishPaymentData.toJson(),
+      ),
+    );
+    HttpClientResponse response = await request.close();
+    return response.statusCode;
   }
 }
