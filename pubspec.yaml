@@ -23,8 +23,7 @@ dev_dependencies:
 flutter:
   # To add assets to your package, add an assets section, like this:
   assets:
-    - images/swish_logo_secondary_RGB.svg
-    - images/swish_logo_secondary_RGB.png
+    - images/
 
   #   - images/a_dot_ham.jpeg
   #
