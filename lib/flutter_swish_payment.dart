@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'dart:math';
 
 enum ButtonTypes {
   textButton,
@@ -16,6 +17,8 @@ enum LogoTypes {
   primary,
   secondary,
 }
+
+Random random = Random();
 
 /// # A Material Design "Swish button"
 ///
@@ -339,7 +342,8 @@ class SwishAgent {
   /// The credentials for reading certificate files.
   final String _credential;
 
-  get securityContext {
+  /// Get the security context based on the provided certificates.
+  SecurityContext get securityContext {
     SecurityContext context = SecurityContext.defaultContext;
     context.useCertificateChainBytes(
       _cert.buffer.asUint8List(),
@@ -350,6 +354,20 @@ class SwishAgent {
       password: _credential,
     );
     return context;
+  }
+
+  /// Get a random 32 hexadecimal UUID (Universally unique identifier).
+  /// While it is random, a collision is extremely unlikely. The number
+  /// of random UUIDs which need to be generated in order to have a
+  /// 50% probability of at least one collision is 2.71 quintillion…
+  String get instructionUUID {
+    int length = 32;
+    const String chars = '0123456789ABCDEF';
+    String hex = '';
+    while (length-- > 0) {
+      hex += chars[(random.nextInt(16)) | 0];
+    }
+    return hex;
   }
 }
 
@@ -369,11 +387,10 @@ class SwishClient {
   Future<int> createPaymentRequest({
     required SwishPaymentData swishPaymentData,
   }) async {
-    // ignore: todo
-    // TODO: Figure out what instructionId is in .../api/v2/paymentrequests/${instructionId}
     HttpClientRequest request = await _httpClient.putUrl(
       Uri.parse(
-        'https://mss.cpc.getswish.net/swish-cpcapi/api/v2/paymentrequests/11A86FE71EA646E4B1A39C975163F038',
+        'https://mss.cpc.getswish.net/swish-cpcapi/api/v2/paymentrequests/' +
+            swishAgent.instructionUUID,
       ),
     );
     request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
