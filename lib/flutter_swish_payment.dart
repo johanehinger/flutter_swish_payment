@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -313,8 +314,8 @@ class SwishPaymentData {
 /// TODO: Initialize PKI members using more than project assets.
 ///
 /// For more info about PKI:
-/// > https://developer.swish.nu/documentation/getting-started/swish-commerce-api
-/// > https://en.wikipedia.org/wiki/Public_key_infrastructure
+/// > - https://developer.swish.nu/documentation/getting-started/swish-commerce-api
+/// > - https://en.wikipedia.org/wiki/Public_key_infrastructure
 class SwishAgent {
   /// Create an instance of `SwishAgent`, all parameters mustn’t be null.
   const SwishAgent.initializeAgent({
@@ -371,12 +372,56 @@ class SwishAgent {
   }
 }
 
+class SwishPaymentRequest {
+  const SwishPaymentRequest({
+    this.paymentRequestToken,
+    required this.location,
+    required this.statusCode,
+    this.validationErrorCode,
+  });
+
+  /// When creating a m-commerce payment request Swish will return a
+  /// `paymentRequestToken`. This is then used to open the Swish app.
+  /// An e-commerce payment request will not contain a `paymentRequestToken`.
+  final String? paymentRequestToken;
+
+  /// An URL for retrieving the status of the payment request.
+  final String? location;
+
+  /// HTTP response status codes responsible for indicating whether the
+  /// Swish request has been successfully completed or not. Possible status
+  /// codes are:
+  /// - **201 Created** Payment request was successfully created.
+  /// [SwishPaymentRequest] will contain a [location] and if it is Swish
+  /// m-commerce case, it will also have a [paymentRequestToken].
+  /// - **400 Bad Request** The Create Payment Request operation was malformed.
+  /// [location] and [paymentRequestToken] will be null.
+  /// - **401 Unauthorized** There are authentication problems with the
+  /// certificate. Or the Swish number in the certificate is not enrolled.
+  /// [location] and [paymentRequestToken] will be null.
+  /// - **403 Forbidden** The payeeAlias in the payment request object is
+  /// not the same as merchant’s Swishnumber. [location] and
+  /// [paymentRequestToken] will be null.
+  /// - **415 Unsupported Media Type** The Content-Type header is not
+  /// "application/json". [location] and [paymentRequestToken] will be null.
+  /// - **422 Unprocessable Entity** There are validation errors. Will
+  /// return an array of Error objects. [location] and [paymentRequestToken]
+  /// will be null.
+  /// - **500 Internal Server Error** There was some unknown/unforeseen error
+  /// that occurred on the server, this should normally not happen.
+  /// [location] and [paymentRequestToken] will be null.
+  final int statusCode;
+
+  final String? validationErrorCode;
+}
+
 /// # Swish Client
 ///
 /// Handles communication to the Swish API. Must be created with
 /// a [SwishAgent] which provides the [SwishClient] with necessary
 /// security context.
 class SwishClient {
+  /// Create a [SwishClient] instance.
   SwishClient({
     required this.swishAgent,
   }) : _httpClient = HttpClient(context: swishAgent.securityContext);
@@ -384,7 +429,9 @@ class SwishClient {
   final SwishAgent swishAgent;
   final HttpClient _httpClient;
 
-  Future<int> createPaymentRequest({
+  /// A payment request is a transaction sent from a merchant to the
+  /// Swish system to initiate an e-commerce or m-commerce payment.
+  Future<SwishPaymentRequest> createPaymentRequest({
     required SwishPaymentData swishPaymentData,
   }) async {
     HttpClientRequest request = await _httpClient.putUrl(
@@ -401,6 +448,63 @@ class SwishClient {
       ),
     );
     HttpClientResponse response = await request.close();
-    return response.statusCode;
+    String? paymentRequestToken = response.headers.value('paymentrequesttoken');
+    String? location = response.headers.value('location');
+
+    return SwishPaymentRequest(
+      location: location,
+      statusCode: response.statusCode,
+      paymentRequestToken: paymentRequestToken,
+    );
+  }
+
+  /// # Open Swish
+  ///
+  /// Open Swish on mobile with the payment information in [SwishPaymentRequest]
+  /// ready for the user to be paid.
+  /// ---
+  /// ## Running on Android 11 and later
+  /// When on Android 11 and later [openSwish] needs to declare intent to open
+  /// Swish in `AndroidManifest.xml`. Add the following in `<queries> … </queries>`
+  /// (if no queries section is present, create it inside of `manifest`).
+  /// ```xml
+  /// <intent>
+  ///   <action android:name="android.intent.action.VIEW" />
+  ///   <data android:scheme="swish" />
+  /// </intent>
+  /// ```
+  ///
+  /// The end result should look something like this:
+  ///
+  /// ```xml
+  /// <manifest>
+  ///   <application>
+  ///     ...
+  ///   </application>
+  ///   <queries>
+  ///     <!-- Open swish -->
+  ///     <intent>
+  ///       <action android:name="android.intent.action.VIEW" />
+  ///       <data android:scheme="swish" />
+  ///     </intent>
+  ///   </queries>
+  /// </manifest>
+  /// ```
+  /// Learn more at:
+  /// > - https://medium.com/androiddevelopers/package-visibility-in-android-11-cc857f221cd9
+  /// > - https://pub.dev/packages/url_launcher
+  Future<void> openSwish({
+    required SwishPaymentRequest swishPaymentRequest,
+  }) async {
+    String callbackURL = 'merchant_flutter_callbackUrl_example';
+    String openSwishUrl = 'swish://paymentrequest?token=' +
+        swishPaymentRequest.paymentRequestToken.toString() +
+        '&callbackurl=' +
+        callbackURL;
+    if (await canLaunch(openSwishUrl)) {
+      await launch(openSwishUrl);
+    } else {
+      throw 'Could not launch Swish';
+    }
   }
 }
