@@ -190,8 +190,8 @@ class SwishPaymentData {
     required this.amount,
     required this.currency,
     required this.callbackUrl,
-    this.payerAlias,
     this.payeePaymentReference,
+    this.payerAlias,
     this.payerSSN,
     this.ageLimit,
     this.message,
@@ -206,12 +206,19 @@ class SwishPaymentData {
   /// has to be all digits or with 2 digit decimal separated with a period.
   final String amount;
 
-  /// The currency to use. Currently the only supported value is SEK.
+  /// The currency to use. Currently the only supported value is `'SEK'`.
   final String currency;
 
   /// URL that Swish will use to notify caller about the result of the
   /// payment request. The URL has to use HTTPS.
   final String callbackUrl;
+
+  /// Payment reference supplied by theMerchant. This is not used
+  /// by Swish but is included in responses back to the client.
+  /// This reference could for example be an order id or similar.
+  /// If set the value must not exceed 35 characters and only
+  /// the following characters are allowed: [a-ö, A-Ö, 0-9, -]
+  final String? payeePaymentReference;
 
   /// The registered Cell phone number of the person that makes the
   /// payment. It can only contain numbers and has to be at least 8
@@ -221,13 +228,6 @@ class SwishPaymentData {
   /// set, request is handled as E-Commerce payment. If not set,
   /// request is handled as M- Commerce payment
   final String? payerAlias;
-
-  /// Payment reference supplied by theMerchant. This is not used
-  /// by Swish but is included in responses back to the client.
-  /// This reference could for example be an order id or similar.
-  /// If set the value must not exceed 35 characters and only
-  /// the following characters are allowed: [a-ö, A-Ö, 0-9, -]
-  final String? payeePaymentReference;
 
   /// The social security number of the individual making the
   /// payment, should match the registered value for payerAlias
@@ -257,8 +257,8 @@ class SwishPaymentData {
         'amount': amount,
         'currency': currency,
         'callbackUrl': callbackUrl,
-        'payerAlias': payerAlias,
         'payeePaymentReference': payeePaymentReference,
+        'payerAlias': payerAlias,
         'payerSSN': payerSSN,
         'ageLimit': ageLimit,
         'message': message,
@@ -277,6 +277,35 @@ class SwishPaymentData {
 /// ```dart
 /// WidgetsFlutterBinding.ensureInitialized();
 /// ```
+/// This sample demonstrates how to initialize a SwishAgent using **test** PKI
+/// files.
+/// ```dart
+/// Future<void> main() async {
+///   WidgetsFlutterBinding.ensureInitialized();
+///   ByteData cert =
+///     await rootBundle.load('assets/swish_merchant_test_certificate.pem');
+///   ByteData key =
+///     await rootBundle.load('assets/swish_merchant_test_certificate.key');
+///   ByteData ca = await rootBundle.load('assets/swish_TLS_root_CA.pem');
+///   String credential = "swish";
+///
+///   SwishAgent swishAgent = SwishAgent.initializeAgent(
+///     cert: cert,
+///     key: key,
+///     ca: ca,
+///     credential: credential,
+///   );
+///
+///   SwishClient swishClient = SwishClient(
+///     swishAgent: swishAgent,
+///   );
+///   runApp(
+///     FlutterSwishPaymentDemo(
+///       swishClient: swishClient,
+///     ),
+///   );
+///}
+/// ```
 // ignore: todo
 /// TODO: Initialize PKI members using more than project assets.
 ///
@@ -284,37 +313,43 @@ class SwishPaymentData {
 /// > https://developer.swish.nu/documentation/getting-started/swish-commerce-api
 /// > https://en.wikipedia.org/wiki/Public_key_infrastructure
 class SwishAgent {
+  /// Create an instance of `SwishAgent`, all parameters mustn’t be null.
   const SwishAgent.initializeAgent({
-    required this.key,
-    required this.ca,
-    required this.cert,
-    required this.credential,
-  });
+    required ByteData key,
+    required ByteData ca,
+    required ByteData cert,
+    required String credential,
+  })  : _cert = cert,
+        _key = key,
+        _ca = ca,
+        _credential = credential;
 
   /// Certificate **(.pem file)**
   /// This file should be well protected in your project!
-  final ByteData cert;
+  final ByteData _cert;
 
-  /// Key for reading the Certificate [cert] **(.key file)**
+  /// Key for reading the Certificate [_cert] **(.key file)**
   /// This file should be well protected in your project!
-  final ByteData key;
+  final ByteData _key;
 
   /// Certificate authority **(.pem file)**
   /// This file should be well protected in your project!
-  final ByteData ca;
+  final ByteData _ca;
 
   /// The credentials for reading certificate files.
-  final String credential;
+  final String _credential;
 
   get securityContext {
     SecurityContext context = SecurityContext.defaultContext;
     context.useCertificateChainBytes(
-      cert.buffer.asUint8List(),
-      password: credential,
+      _cert.buffer.asUint8List(),
+      password: _credential,
     );
     context.usePrivateKeyBytes(
-      key.buffer.asUint8List(),
+      _key.buffer.asUint8List(),
+      password: _credential,
     );
+    return context;
   }
 }
 
@@ -331,17 +366,17 @@ class SwishClient {
   final SwishAgent swishAgent;
   final HttpClient _httpClient;
 
-  Future<int> createPaymentRequest(
-      {required SwishPaymentData swishPaymentData}) async {
+  Future<int> createPaymentRequest({
+    required SwishPaymentData swishPaymentData,
+  }) async {
     // ignore: todo
     // TODO: Figure out what instructionId is in .../api/v2/paymentrequests/${instructionId}
-    HttpClientRequest request = await _httpClient.openUrl(
-      'PUT',
+    HttpClientRequest request = await _httpClient.putUrl(
       Uri.parse(
-        'https://mss.cpc.getswish.net/swish-cpcapi/api/v2/paymentrequests',
+        'https://mss.cpc.getswish.net/swish-cpcapi/api/v2/paymentrequests/11A86FE71EA646E4B1A39C975163F038',
       ),
     );
-    request.headers.set(HttpHeaders.contentTypeHeader, 'APPLICATION/JSON');
+    request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
     // Write the data to the request
     request.write(
       json.encode(
