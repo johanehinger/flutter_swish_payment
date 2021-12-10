@@ -80,6 +80,7 @@ Random random = Random();
 class SwishButton extends StatelessWidget {
   /// Create an elevated button with the primary logo of Swish.
   ///
+  /// ![Swish Primary Logo](https://github.com/johanehinger/flutter_swish_payment/blob/main/images/swish_logo_primary_RGB.png?raw=true|width=200,height=250)
   const SwishButton.primaryElevatedButton({
     Key? key,
     required this.onPressed,
@@ -90,6 +91,7 @@ class SwishButton extends StatelessWidget {
 
   /// Create an text button with the primary logo of Swish.
   ///
+  /// ![Swish Primary Logo](https://github.com/johanehinger/flutter_swish_payment/blob/main/images/swish_logo_primary_RGB.png?raw=true|width=200,height=250)
   const SwishButton.primaryTextButton({
     Key? key,
     required this.onPressed,
@@ -372,7 +374,12 @@ class SwishAgent {
   }
 }
 
+/// # Swish Payment Request
+///
+/// A transaction sent from a merchant to the Swish system to initiate an
+/// payment.
 class SwishPaymentRequest {
+  /// Create a [SwishPaymentRequest] instance
   const SwishPaymentRequest({
     this.paymentRequestToken,
     required this.location,
@@ -458,7 +465,27 @@ class SwishClient {
     );
   }
 
+  /// Get the payment request from Swish. Will contain information about the status
+  /// of the payment request in JSON format.
+  /// (**Unstable and under development**)
+  Future<void> getPaymentRequest(
+      {required SwishPaymentRequest swishPaymentRequest}) async {
+    HttpClientRequest request = await _httpClient.getUrl(
+      Uri.parse(swishPaymentRequest.location!),
+    );
+    request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+
+    HttpClientResponse response = await request.close();
+
+    debugPrint(response.statusCode.toString());
+    response.transform(utf8.decoder).listen((data) {
+      debugPrint(data);
+    });
+  }
+
   /// # Open Swish
+  ///
+  /// (**Unstable and under development**)
   ///
   /// Open Swish on mobile with the payment information in [SwishPaymentRequest]
   /// ready for the user to be paid.
