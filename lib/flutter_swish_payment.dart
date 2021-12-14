@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 
@@ -381,45 +382,180 @@ class SwishAgent {
 class SwishPaymentRequest {
   /// Create a [SwishPaymentRequest] instance
   const SwishPaymentRequest({
-    this.paymentRequestToken,
-    required this.location,
     required this.statusCode,
-    this.validationErrorCode,
+    this.id,
+    this.location,
+    this.payeePaymentReference,
+    this.paymentReference,
+    this.callbackUrl,
+    this.payerAlias,
+    this.payeeAlias,
+    this.amount,
+    this.currency,
+    this.message,
+    this.status,
+    this.dateCreated,
+    this.datePaid,
+    this.errorCode,
+    this.errorMessage,
   });
 
-  /// When creating a m-commerce payment request Swish will return a
-  /// `paymentRequestToken`. This is then used to open the Swish app.
-  /// An e-commerce payment request will not contain a `paymentRequestToken`.
-  final String? paymentRequestToken;
-
-  /// An URL for retrieving the status of the payment request.
-  final String? location;
-
-  /// HTTP response status codes responsible for indicating whether the
-  /// Swish request has been successfully completed or not. Possible status
-  /// codes are:
-  /// - **201 Created** Payment request was successfully created.
-  /// [SwishPaymentRequest] will contain a [location] and if it is Swish
-  /// m-commerce case, it will also have a [paymentRequestToken].
-  /// - **400 Bad Request** The Create Payment Request operation was malformed.
-  /// [location] and [paymentRequestToken] will be null.
-  /// - **401 Unauthorized** There are authentication problems with the
-  /// certificate. Or the Swish number in the certificate is not enrolled.
-  /// [location] and [paymentRequestToken] will be null.
-  /// - **403 Forbidden** The payeeAlias in the payment request object is
-  /// not the same as merchant’s Swishnumber. [location] and
-  /// [paymentRequestToken] will be null.
-  /// - **415 Unsupported Media Type** The Content-Type header is not
-  /// "application/json". [location] and [paymentRequestToken] will be null.
-  /// - **422 Unprocessable Entity** There are validation errors. Will
-  /// return an array of Error objects. [location] and [paymentRequestToken]
-  /// will be null.
-  /// - **500 Internal Server Error** There was some unknown/unforeseen error
-  /// that occurred on the server, this should normally not happen.
-  /// [location] and [paymentRequestToken] will be null.
+  /// The status code of the payment request. This will contain
+  /// information about the status of the communication with Swish.
+  /// It follows basic http status codes.
   final int statusCode;
 
-  final String? validationErrorCode;
+  /// Payment request ID.
+  final String? id;
+
+  /// An URL for retrieving the payment request.
+  final String? location;
+
+  /// Payment reference of the payee, wich is the merchant that receives
+  /// the payment. This reference could be order id or similar. Allowed
+  /// characters are a-z A-Z 0-9 -_.+*/ and lenght must be between 1
+  /// and 35 characters.
+  final String? payeePaymentReference;
+
+  /// Payment reference, from the bank, of the payment that occurred
+  /// based on the Payment request. Only available if status is PAID.
+  final String? paymentReference;
+
+  /// URL that Swish will use to notify caller about the outcome of
+  /// the Payment request. The URL has to use HTTPS.
+  final String? callbackUrl;
+
+  /// The registered cellphone number of the person that makes the
+  /// payment. It can only contain numbers and has to be at least
+  /// 8 and at most 15 numbers. It also needs to match the following
+  /// format in order to be found in Swish: country code + cellphone
+  /// number (without leading zero). E.g. 46712345678
+  final String? payerAlias;
+
+  /// The Swish number of the payee. It needs to match with Merchant
+  /// Swish number.
+  final String? payeeAlias;
+
+  /// The amount of money to pay. The amount cannot be less than 0.01
+  /// SEK and not more than 999999999999.99 SEK. Valid value has to
+  /// be all digits or with 2 digit decimal separated with a period.
+  final double? amount;
+
+  /// The currency to use. Currently the only supported value is SEK.
+  final String? currency;
+
+  /// Merchant supplied message about the payment/order. Max 50
+  /// characters. Allowed characters are the letters a-ö, A-Ö, the
+  /// numbers 0-9 and any of the special characters :;.,?!()-”.
+  final String? message;
+
+  /// The status of the payment request.
+  final String? status;
+
+  /// The Creation date of the payment request. This will be the date
+  /// and time Swish received the payment request.
+  final String? dateCreated;
+
+  /// The exact time the payment request got paid.
+  final String? datePaid;
+
+  /// The error code received by Swish.
+  final String? errorCode;
+
+  /// Additional information regarding any potential errors received
+  /// from Swish while handling the payment request.
+  final String? errorMessage;
+
+  /// Create an instance of [SwishPaymentRequest] from a JSON object.
+  factory SwishPaymentRequest.fromJson({
+    required Map<String, dynamic> json,
+    required int statusCode,
+    required String? location,
+  }) {
+    return SwishPaymentRequest(
+      statusCode: statusCode,
+      id: json['id'],
+      location: location,
+      payeePaymentReference: json['payeePaymentReference'],
+      paymentReference: json['paymentReference'],
+      callbackUrl: json['callbackUrl'],
+      payerAlias: json['payerAlias'],
+      payeeAlias: json['payeeAlias'],
+      amount: json['amount'],
+      currency: json['currency'],
+      message: json['message'],
+      status: json['status'],
+      dateCreated: json['dateCreated'],
+      datePaid: json['datePaid'],
+      errorCode: json['errorCode'],
+      errorMessage: json['errorMessage'],
+    );
+  }
+
+  /// Create an instance of [SwishPaymentRequest] when something went
+  /// wrong. Will set everything to null except `statusCode`,
+  /// `errorCode`, `errorMessage` and `status`.
+  factory SwishPaymentRequest.fromError({
+    required int statusCode,
+    required String errorCode,
+    required String errorMessage,
+  }) {
+    return SwishPaymentRequest(
+      statusCode: statusCode,
+      id: null,
+      location: null,
+      payeePaymentReference: null,
+      paymentReference: null,
+      callbackUrl: null,
+      payerAlias: null,
+      payeeAlias: null,
+      amount: null,
+      currency: null,
+      message: null,
+      status: 'ERROR',
+      dateCreated: null,
+      datePaid: null,
+      errorCode: errorCode,
+      errorMessage: errorMessage,
+    );
+  }
+
+  @override
+  String toString() {
+    return '{ statusCode: ' +
+        statusCode.toString() +
+        ', id: ' +
+        id.toString() +
+        ', location: ' +
+        location.toString() +
+        ', payeePaymentReference: ' +
+        payeePaymentReference.toString() +
+        ', paymentReference: ' +
+        paymentReference.toString() +
+        ', callbackUrl: ' +
+        callbackUrl.toString() +
+        ', payerAlias: ' +
+        payerAlias.toString() +
+        ', payeeAlias: ' +
+        payeeAlias.toString() +
+        ', amount: ' +
+        amount.toString() +
+        ', currency: ' +
+        currency.toString() +
+        ', message: ' +
+        message.toString() +
+        ', status: ' +
+        status.toString() +
+        ', dateCreated: ' +
+        dateCreated.toString() +
+        ', datePaid: ' +
+        datePaid.toString() +
+        ', errorCode: ' +
+        errorCode.toString() +
+        ', errorMessage: ' +
+        errorMessage.toString() +
+        ' }';
+  }
 }
 
 /// # Swish Client
@@ -434,6 +570,9 @@ class SwishClient {
   }) : _httpClient = HttpClient(context: swishAgent.securityContext);
 
   final SwishAgent swishAgent;
+
+  // ignore: todo
+  // TODO: _httpClient still plays a huge role in security context. Make use of http.Client instead.
   final HttpClient _httpClient;
 
   /// A payment request is a transaction sent from a merchant to the
@@ -441,46 +580,59 @@ class SwishClient {
   Future<SwishPaymentRequest> createPaymentRequest({
     required SwishPaymentData swishPaymentData,
   }) async {
-    HttpClientRequest request = await _httpClient.putUrl(
+    http.Response response = await http.put(
       Uri.parse(
         'https://mss.cpc.getswish.net/swish-cpcapi/api/v2/paymentrequests/' +
             swishAgent.instructionUUID,
       ),
-    );
-    request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-    // Write the data to the request
-    request.write(
-      json.encode(
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: json.encode(
         swishPaymentData.toJson(),
       ),
     );
-    HttpClientResponse response = await request.close();
-    String? paymentRequestToken = response.headers.value('paymentrequesttoken');
-    String? location = response.headers.value('location');
 
-    return SwishPaymentRequest(
-      location: location,
+    if (response.headers['location'] != null) {
+      return await getPaymentRequest(location: response.headers['location']!);
+    }
+
+    List<dynamic> responseBody = jsonDecode(
+      utf8.decode(
+        response.bodyBytes,
+      ),
+    ) as List<dynamic>;
+
+    Map<String, dynamic> errorInformation =
+        responseBody[0] as Map<String, dynamic>;
+    return SwishPaymentRequest.fromError(
       statusCode: response.statusCode,
-      paymentRequestToken: paymentRequestToken,
+      errorCode: errorInformation['errorCode'],
+      errorMessage: errorInformation['errorMessage'],
     );
   }
 
   /// Get the payment request from Swish. Will contain information about the status
   /// of the payment request in JSON format.
   /// (**Unstable and under development**)
-  Future<void> getPaymentRequest(
-      {required SwishPaymentRequest swishPaymentRequest}) async {
-    HttpClientRequest request = await _httpClient.getUrl(
-      Uri.parse(swishPaymentRequest.location!),
+  Future<SwishPaymentRequest> getPaymentRequest({
+    required String location,
+  }) async {
+    http.Response response = await http.get(
+      Uri.parse(location),
     );
-    request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
 
-    HttpClientResponse response = await request.close();
+    SwishPaymentRequest swishPaymentRequest = SwishPaymentRequest.fromJson(
+      json: jsonDecode(
+        utf8.decode(
+          response.bodyBytes,
+        ),
+      ) as Map<String, dynamic>,
+      location: location,
+      statusCode: response.statusCode,
+    );
 
-    debugPrint(response.statusCode.toString());
-    response.transform(utf8.decoder).listen((data) {
-      debugPrint(data);
-    });
+    return swishPaymentRequest;
   }
 
   /// # Open Swish
@@ -525,7 +677,7 @@ class SwishClient {
   }) async {
     String callbackURL = 'merchant_flutter_callbackUrl_example';
     String openSwishUrl = 'swish://paymentrequest?token=' +
-        swishPaymentRequest.paymentRequestToken.toString() +
+        swishPaymentRequest.id.toString() +
         '&callbackurl=' +
         callbackURL;
     if (await canLaunch(openSwishUrl)) {
