@@ -1,10 +1,10 @@
 library flutter_swish_payment;
 
 import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/io_client.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -567,20 +567,22 @@ class SwishClient {
   /// Create a [SwishClient] instance.
   SwishClient({
     required this.swishAgent,
-  }) : _httpClient = HttpClient(context: swishAgent.securityContext);
+  }) : _httpClient = IOClient(
+          HttpClient(
+            context: swishAgent.securityContext,
+          ),
+        );
 
   final SwishAgent swishAgent;
 
-  // ignore: todo
-  // TODO: _httpClient still plays a huge role in security context. Make use of http.Client instead.
-  final HttpClient _httpClient;
+  final http.Client _httpClient;
 
   /// A payment request is a transaction sent from a merchant to the
   /// Swish system to initiate an e-commerce or m-commerce payment.
   Future<SwishPaymentRequest> createPaymentRequest({
     required SwishPaymentData swishPaymentData,
   }) async {
-    http.Response response = await http.put(
+    http.Response response = await _httpClient.put(
       Uri.parse(
         'https://mss.cpc.getswish.net/swish-cpcapi/api/v2/paymentrequests/' +
             swishAgent.instructionUUID,
@@ -618,7 +620,7 @@ class SwishClient {
   Future<SwishPaymentRequest> getPaymentRequest({
     required String location,
   }) async {
-    http.Response response = await http.get(
+    http.Response response = await _httpClient.get(
       Uri.parse(location),
     );
 
