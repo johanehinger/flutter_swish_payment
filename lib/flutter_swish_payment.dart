@@ -573,6 +573,7 @@ class SwishClient {
           ),
         );
 
+  /// [SwishAgent] that handles internal security.
   final SwishAgent swishAgent;
 
   final http.Client _httpClient;
