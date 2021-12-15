@@ -638,6 +638,26 @@ class SwishClient {
     return swishPaymentRequest;
   }
 
+  /// Will wait for the [SwishPaymentRequest] to change its status from `CREATED`.
+  /// Upon a new status `waitForPaymentRequest` will return the the new
+  /// [SwishPaymentRequest].
+  Future<SwishPaymentRequest> waitForPaymentRequest({
+    required String location,
+  }) async {
+    SwishPaymentRequest swishPaymentRequest = await getPaymentRequest(
+      location: location,
+    );
+    while (swishPaymentRequest.status == "CREATED") {
+      swishPaymentRequest = await getPaymentRequest(location: location);
+      await Future.delayed(
+        const Duration(
+          seconds: 2,
+        ),
+      );
+    }
+    return swishPaymentRequest;
+  }
+
   /// # Open Swish
   ///
   /// (**Unstable and under development**)
