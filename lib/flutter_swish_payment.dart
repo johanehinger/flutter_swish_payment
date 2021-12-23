@@ -10,12 +10,12 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 
-enum ButtonTypes {
+enum _ButtonType {
   textButton,
   elevatedButton,
 }
 
-enum LogoTypes {
+enum _LogoType {
   primary,
   secondary,
 }
@@ -86,8 +86,8 @@ class SwishButton extends StatelessWidget {
     Key? key,
     required this.onPressed,
     this.style,
-  })  : buttonType = ButtonTypes.elevatedButton,
-        logo = LogoTypes.primary,
+  })  : buttonType = _ButtonType.elevatedButton,
+        logo = _LogoType.primary,
         super(key: key);
 
   /// Create an text button with the primary logo of Swish.
@@ -97,8 +97,8 @@ class SwishButton extends StatelessWidget {
     Key? key,
     required this.onPressed,
     this.style,
-  })  : buttonType = ButtonTypes.textButton,
-        logo = LogoTypes.primary,
+  })  : buttonType = _ButtonType.textButton,
+        logo = _LogoType.primary,
         super(key: key);
 
   /// Create an elevated button with the secondary logo of Swish.
@@ -108,8 +108,8 @@ class SwishButton extends StatelessWidget {
     Key? key,
     required this.onPressed,
     this.style,
-  })  : buttonType = ButtonTypes.elevatedButton,
-        logo = LogoTypes.secondary,
+  })  : buttonType = _ButtonType.elevatedButton,
+        logo = _LogoType.secondary,
         super(key: key);
 
   /// Create an text button with the secondary logo of Swish.
@@ -119,20 +119,20 @@ class SwishButton extends StatelessWidget {
     Key? key,
     required this.onPressed,
     this.style,
-  })  : buttonType = ButtonTypes.textButton,
-        logo = LogoTypes.secondary,
+  })  : buttonType = _ButtonType.textButton,
+        logo = _LogoType.secondary,
         super(key: key);
 
   final ButtonStyle? style;
   final VoidCallback? onPressed;
-  final ButtonTypes buttonType;
-  final LogoTypes logo;
+  final _ButtonType buttonType;
+  final _LogoType logo;
 
   @override
   Widget build(BuildContext context) {
     Image _logo;
     switch (logo) {
-      case LogoTypes.primary:
+      case _LogoType.primary:
         _logo = const Image(
           image: AssetImage(
             'images/swish_logo_primary_RGB.png',
@@ -140,7 +140,7 @@ class SwishButton extends StatelessWidget {
           ),
         );
         break;
-      case LogoTypes.secondary:
+      case _LogoType.secondary:
         _logo = const Image(
           fit: BoxFit.fitWidth,
           image: AssetImage(
@@ -165,13 +165,13 @@ class SwishButton extends StatelessWidget {
         );
 
     switch (buttonType) {
-      case ButtonTypes.elevatedButton:
+      case _ButtonType.elevatedButton:
         return ElevatedButton(
           onPressed: onPressed,
           child: _logo,
           style: _style,
         );
-      case ButtonTypes.textButton:
+      case _ButtonType.textButton:
         return TextButton(
           onPressed: onPressed,
           child: _logo,
