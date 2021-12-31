@@ -20,8 +20,6 @@ enum _LogoType {
   secondary,
 }
 
-Random random = Random();
-
 /// # A Material Design "Swish button"
 ///
 /// When adding Swish widgets to the UI, special care should be taken to
@@ -365,6 +363,7 @@ class SwishAgent {
   /// of random UUIDs which need to be generated in order to have a
   /// 50% probability of at least one collision is 2.71 quintillion…
   String get instructionUUID {
+    Random random = Random();
     int length = 32;
     const String chars = '0123456789ABCDEF';
     String hex = '';
