@@ -13,9 +13,6 @@ Future<void> main() async {
   ByteData key = await rootBundle.load(
     'assets/Swish_Merchant_TestCertificate.key',
   );
-  ByteData ca = await rootBundle.load(
-    'assets/Swish_TLS_RootCA.pem',
-  );
 
   // The password for the certificate files. Swish uses standard "swish" for the
   // test files. Store your private password securely.
@@ -23,7 +20,6 @@ Future<void> main() async {
 
   SwishAgent swishAgent = SwishAgent.initializeAgent(
     key: key,
-    ca: ca,
     cert: cert,
     credential: credential,
   );
@@ -125,10 +121,12 @@ class _HomePageState extends State<HomePage> {
                         isWaiting = false;
                       });
                       // The payment is now done (or failed).
+                      // ignore: avoid_print
                       print(
                         swishPaymentRequest.toString(),
                       );
                     } catch (error) {
+                      // ignore: avoid_print
                       print(
                         error.toString(),
                       );

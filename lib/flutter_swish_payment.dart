@@ -318,12 +318,10 @@ class SwishAgent {
   /// Create an instance of `SwishAgent`, all parameters mustn’t be null.
   const SwishAgent.initializeAgent({
     required ByteData key,
-    required ByteData ca,
     required ByteData cert,
     required String credential,
   })  : _cert = cert,
         _key = key,
-        _ca = ca,
         _credential = credential;
 
   /// Certificate **(.pem file)**
@@ -333,10 +331,6 @@ class SwishAgent {
   /// Key for reading the Certificate [_cert] **(.key file)**
   /// This file should be well protected in your project!
   final ByteData _key;
-
-  /// Certificate authority **(.pem file)**
-  /// This file should be well protected in your project!
-  final ByteData _ca;
 
   /// The credentials for reading certificate files.
   final String _credential;
