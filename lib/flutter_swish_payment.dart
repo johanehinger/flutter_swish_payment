@@ -1,7 +1,6 @@
 library flutter_swish_payment;
 
 import 'dart:io';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/io_client.dart';
@@ -311,8 +310,6 @@ class SwishPaymentData {
 ///   );
 ///}
 /// ```
-// ignore: todo
-/// TODO: Initialize PKI members using more than project assets.
 ///
 /// For more info about PKI:
 /// > - https://developer.swish.nu/documentation/getting-started/swish-commerce-api
@@ -646,7 +643,7 @@ class SwishClient {
     SwishPaymentRequest swishPaymentRequest = await getPaymentRequest(
       location: location,
     );
-    while (swishPaymentRequest.status == "CREATED") {
+    while (swishPaymentRequest.status == 'CREATED') {
       swishPaymentRequest = await getPaymentRequest(location: location);
       await Future.delayed(
         const Duration(
@@ -659,10 +656,14 @@ class SwishClient {
 
   /// # Open Swish
   ///
-  /// (**Unstable and under development**)
+  /// ### **⚠️ Unstable and under development** ⚠️
   ///
   /// Open Swish on mobile with the payment information in [SwishPaymentRequest]
   /// ready for the user to be paid.
+  /// [openSwish] works, but in order for a successful and smooth experience for
+  /// the user a URL must be registered for the application you are developing.
+  /// This in then passed in to the [SwishPaymentRequest] `callbackUrl`. You can
+  /// read more about this [here](https://developer.swish.nu/faq/what-is-needed-in-order-to-get-the-user-back-to-the-original-application)
   /// ---
   /// ## Running on Android 11 and later
   /// When on Android 11 and later [openSwish] needs to declare intent to open
@@ -697,11 +698,10 @@ class SwishClient {
   Future<void> openSwish({
     required SwishPaymentRequest swishPaymentRequest,
   }) async {
-    String callbackURL = 'merchant_flutter_callbackUrl_example';
     String openSwishUrl = 'swish://paymentrequest?token=' +
-        swishPaymentRequest.id.toString() +
+        swishPaymentRequest.id! +
         '&callbackurl=' +
-        callbackURL;
+        swishPaymentRequest.callbackUrl!;
     if (await canLaunch(openSwishUrl)) {
       await launch(openSwishUrl);
     } else {
