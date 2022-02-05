@@ -1,8 +1,10 @@
-![Swish Secondary Logo](https://github.com/johanehinger/flutter_swish_payment/blob/main/images/swish_logo_secondary_RGB.png?raw=true|width=250,height=75)
+<p align="center">
+<a href="https://www.swish.nu/"><img src="https://github.com/johanehinger/flutter_swish_payment/blob/main/images/swish_logo_secondary_RGB.png?raw=true" height="150" alt="Swish" /></a>
+</p>
 
 # flutter_swish_payment
 
-A Swish commerce widget library for Flutter.
+A widget and functions library for the Swedish payment service Swish.
 
 ## What is Swish?
 
@@ -83,6 +85,10 @@ Learn more at:
 
 > - [Package visibility in android 11](https://medium.com/androiddevelopers/package-visibility-in-android-11-cc857f221cd9)
 > - [Intent](https://pub.dev/packages/intent)
+
+## What is the future goal for flutter_swish_payment?
+
+The goal is to have a full library covering everything from the Swish API. Everything from a Swish QR code widget, to managing refunds from your online store.
 
 ## Contributing
 
