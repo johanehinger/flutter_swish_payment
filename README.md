@@ -93,3 +93,9 @@ The goal is to have a full library covering everything from the Swish API. Every
 ## Contributing
 
 flutter_swish_payment is still in its early development. Help us out by reporting bugs, propose new features or even contribute with your own code on our [Github](https://github.com/johanehinger/flutter_swish_payment/). Together we can take this project to the next level and release a final version.
+
+---
+
+> ### Disclaimer
+>
+> As the project stands now, it has only been tested against the Merchant Swish Simulator (MMS). Before using this package for real transactions contact the [Swish team](https://developer.swish.nu/contact-us) for guidance.
