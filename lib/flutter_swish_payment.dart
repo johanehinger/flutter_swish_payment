@@ -286,17 +286,17 @@ class SwishPaymentData {
 /// ```dart
 /// Future<void> main() async {
 ///   WidgetsFlutterBinding.ensureInitialized();
+///
 ///   ByteData cert =
 ///     await rootBundle.load('assets/swish_merchant_test_certificate.pem');
 ///   ByteData key =
 ///     await rootBundle.load('assets/swish_merchant_test_certificate.key');
-///   ByteData ca = await rootBundle.load('assets/swish_TLS_root_CA.pem');
+///
 ///   String credential = "swish";
 ///
 ///   SwishAgent swishAgent = SwishAgent.initializeAgent(
 ///     cert: cert,
 ///     key: key,
-///     ca: ca,
 ///     credential: credential,
 ///   );
 ///
