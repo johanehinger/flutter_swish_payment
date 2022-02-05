@@ -1,11 +1,11 @@
 name: flutter_swish_payment
 description: A widget and functions library for the Swedish payment service Swish.
-version: 0.0.1-alpha
+version: 0.0.1
 homepage: https://github.com/johanehinger/flutter_swish_payment
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
-  flutter: ">=1.17.0"
+  sdk: '>=2.12.0 <3.0.0'
+  flutter: '>=1.17.0'
 
 dependencies:
   flutter:
@@ -21,3 +21,6 @@ dev_dependencies:
 flutter:
   assets:
     - images/
+
+false_secrets:
+  - images/swish_logo_primary_RGB.svg
